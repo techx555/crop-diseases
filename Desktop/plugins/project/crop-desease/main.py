@@ -87,7 +87,7 @@ async def analyze_crop(file: UploadFile = File(...)):
     try:
         # Call Gemini 2.5 Flash with image bytes and strict JSON schema
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             contents=[
                 types.Part.from_bytes(
                     data=file_bytes,
