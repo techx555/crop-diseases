@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Disease Detection Tester</title>
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --primary-hover: #1b5e20;
+            --bg-color: #f4f6f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #cccccc;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            background: #fafafa;
+        }
+
+        .preview-container {
+            width: 100%;
+            max-height: 250px;
+            display: none;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 8px;
+            object-fit: contain;
+            border: 1px solid var(--border-color);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            font-style: italic;
+            color: #666;
+            margin: 15px 0;
+        }
+
+        .results-card {
+            display: none;
+            margin-top: 25px;
+            border-top: 2px solid var(--bg-color);
+            padding-top: 20px;
+        }
+
+        .result-item {
+            margin-bottom: 12px;
+        }
+
+        .result-item strong {
+            color: #444;
+        }
+
+        ul {
+            margin: 5px 0 15px 20px;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        .error-box {
+            display: none;
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid #ef9a9a;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🌱 Crop Disease Diagnosis</h1>
+        
+        <!-- Upload Form Controls -->
+        <div class="upload-section">
+            <label for="imageInput">Select a plant leaf image (JPEG, PNG, WEBP):</label>
+            <input type="file" id="imageInput" accept="image/jpeg, image/png, image/webp">
+            
+            <!-- Image Preview Box -->
+            <div class="preview-container" id="previewContainer">
+                <img id="imagePreview" alt="Selected leaf preview">
+            </div>
+
+            <button id="analyzeBtn" disabled>Analyze Crop</button>
+        </div>
+
+        <!-- Loading Message -->
+        <div class="loading" id="loadingMessage">Analyzing leaf image with AI... Please wait.</div>
+
+        <!-- Error Box -->
+        <div class="error-box" id="errorBox"></div>
+
+        <!-- Results Display Section -->
+        <div class="results-card" id="resultsCard">
+            <div class="result-item"><strong>Crop Name:</strong> <span id="resCropName"></span></div>
+            <div class="result-item"><strong>Condition / Disease:</strong> <span id="resDiseaseName"></span></div>
+            <div class="result-item"><strong>Confidence:</strong> <span id="resConfidence"></span></div>
+            <div class="result-item"><strong>Summary:</strong> <p id="resSummary" style="margin: 4px 0;"></p></div>
+            
+            <div class="result-item">
+                <strong>Symptoms:</strong>
+                <ul id="resSymptoms"></ul>
+            </div>
+
+            <div class="result-item">
+                <strong>Causes:</strong>
+                <ul id="resCauses"></ul>
+            </div>
+
+            <div class="result-item">
+                <strong>Treatment & Prevention:</strong>
+                <ul id="resTreatment"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const errorBox = document.getElementById('errorBox');
+        const resultsCard = document.getElementById('resultsCard');
+
+        // 1. Handle image selection and show preview
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    previewContainer.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+                analyzeBtn.disabled = false; // Enable button once file is selected
+            } else {
+                previewContainer.style.display = 'none';
+                analyzeBtn.disabled = true;
+            }
+        });
+
+        // 2. Handle "Analyze Crop" button click
+        analyzeBtn.addEventListener('click', async () => {
+            const file = imageInput.files[0];
+            if (!file) return;
+
+            // Clear previous results/errors and show loading state
+            errorBox.style.display = 'none';
+            resultsCard.style.display = 'none';
+            loadingMessage.style.display = 'block';
+            analyzeBtn.disabled = true;
+
+            // Create a FormData object to hold the uploaded file
+            // Note: The key name 'file' must match FastAPI's parameter `file: UploadFile = File(...)`
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Send POST request to FastAPI backend endpoint using fetch()
+                const response = await fetch('http://127.0.0.1:8000/api/analyze-crop', {
+                    method: 'POST',
+                    body: formData
+                    // Note: Do NOT manually set 'Content-Type': 'multipart/form-data'. 
+                    // The browser automatically sets the correct multipart boundary headers for FormData.
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // Handle HTTP error responses returned by FastAPI (e.g., 400 or 502)
+                    throw new Error(data.detail || 'Failed to analyze image.');
+                }
+
+                // 3. Render returned JSON fields into the HTML elements
+                document.getElementById('resCropName').textContent = data.crop_name;
+                document.getElementById('resDiseaseName').textContent = data.disease_name;
+                document.getElementById('resConfidence').textContent = data.confidence_estimate;
+                document.getElementById('resSummary').textContent = data.summary;
+
+                // Helper function to populate bullet point lists dynamically
+                const populateList = (elementId, items) => {
+                    const ul = document.getElementById(elementId);
+                    ul.innerHTML = ''; // Clear previous items
+                    if (items && items.length > 0) {
+                        items.forEach(item => {
+                            const li = document.createElement('li');
+                            li.textContent = item;
+                            ul.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'None noted.';
+                        ul.appendChild(li);
+                    }
+                };
+
+                populateList('resSymptoms', data.symptoms);
+                populateList('resCauses', data.causes);
+                populateList('resTreatment', data.treatment_and_prevention);
+
+                // Show the results card container
+                resultsCard.style.display = 'block';
+
+            } catch (err) {
+                // Display error message if network or server request fails
+                errorBox.textContent = `Error: ${err.message}`;
+                errorBox.style.display = 'block';
+            } finally {
+                // Hide loading spinner and re-enable button
+                loadingMessage.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
